@@ -1,0 +1,29 @@
+#!/bin/bash
+# Script: analysis.sh
+# Purpose: Extract ALPS-index from preprocessed DTI data
+# Dependencies: FSL, custom ALPS scripts
+# Input: sub_list file with participant IDs
+
+core_path="/path/to/project"
+deriv_path="${core_path}/derivatives/preproc"
+analysis_path="${core_path}/derivatives/alps"
+sub_list="${core_path}/sub_list"
+
+for sub in $(cat $sub_list); do
+    echo "Running ALPS-index analysis for: $sub"
+
+    dwi_preproc="${deriv_path}/${sub}_dwi_preproc.nii.gz"
+    alps_out="${analysis_path}/${sub}_alps_index.txt"
+
+    # Example ALPS pipeline step (placeholder)
+    run_alps_pipeline \
+        --in=$dwi_preproc \
+        --mask=${deriv_path}/${sub}_brain_mask.nii.gz \
+        --out=$alps_out
+
+    if [ -f "$alps_out" ]; then
+        echo "✅ ALPS-index extracted for $sub"
+    else
+        echo "❌ ALPS analysis failed for $sub"
+    fi
+done
