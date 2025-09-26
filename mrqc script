@@ -1,0 +1,24 @@
+#!/bin/bash
+# Script: mriqc.sh
+# Purpose: Run MRIQC on each participant’s data
+# Dependencies: MRIQC, BIDS structure
+# Input: sub_list file with participant IDs
+
+core_path="/path/to/project"
+bids_path="${core_path}/bids"
+output_path="${core_path}/derivatives/mriqc"
+sub_list="${core_path}/sub_list"
+
+for sub in $(cat $sub_list); do
+    echo "Running MRIQC for participant: $sub"
+
+    mriqc $bids_path $output_path participant \
+        --participant_label $sub \
+        --no-sub
+
+    if [ $? -eq 0 ]; then
+        echo "✅ MRIQC finished for $sub"
+    else
+        echo "❌ MRIQC failed for $sub"
+    fi
+done
