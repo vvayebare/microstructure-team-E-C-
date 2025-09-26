@@ -1,0 +1,44 @@
+#!/bin/bash
+# Script: preprocessing.sh
+# Purpose: Apply preprocessing steps to DTI data (denoising, Gibbs ringing, topup, eddy)
+# Dependencies: MRtrix3, FSL (eddy_cpu if no GPU), BIDS structure
+# Input: sub_list file with participant IDs
+
+core_path="/path/to/project"
+bids_path="${core_path}/bids"
+deriv_path="${core_path}/derivatives/preproc"
+sub_list="${core_path}/sub_list"
+
+for sub in $(cat $sub_list); do
+    echo "Preprocessing participant: $sub"
+
+    dwi_in="${bids_path}/$sub/dwi/${sub}_dwi.nii.gz"
+    dwi_out="${deriv_path}/${sub}_dwi_preproc.nii.gz"
+
+    # Step 1: Denoising
+    dwidenoise $dwi_in ${deriv_path}/${sub}_dwi_denoised.nii.gz
+
+    # Step 2: Gibbs ringing correction
+    mrdegibbs ${deriv_path}/${sub}_dwi_denoised.nii.gz ${deriv_path}/${sub}_dwi_degibbs.nii.gz
+
+    # Step 3: Susceptibility correction (topup)
+    topup --imain=${deriv_path}/${sub}_dwi_degibbs.nii.gz \
+          --datain=${bids_path}/$sub/dwi/acq_params.txt \
+          --config=b02b0.cnf \
+          --out=${deriv_path}/${sub}_topup
+
+    # Step 4: Eddy current + motion correction
+    eddy_cpu --imain=${deriv_path}/${sub}_dwi_degibbs.nii.gz \
+             --mask=${deriv_path}/${sub}_brain_mask.nii.gz \
+             --acqp=${bids_path}/$sub/dwi/acq_params.txt \
+             --index=${bids_path}/$sub/dwi/index.txt \
+             --bvecs=${bids_path}/$sub/dwi/${sub}_dwi.bvec \
+             --bvals=${bids_path}/$sub/dwi/${sub}_dwi.bval \
+             --out=$dwi_out
+
+    if [ -f "$dwi_out" ]; then
+        echo "✅ Preprocessing completed for $sub"
+    else
+        echo "❌ Preprocessing failed for $sub"
+    fi
+done
