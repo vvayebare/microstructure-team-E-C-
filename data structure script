@@ -1,0 +1,24 @@
+#!/bin/bash
+# Script: data_structure.sh
+# Purpose: Convert ADNI DICOMs to NIfTI and organize into BIDS format
+# Dependencies: BIDScoin (preferred), dcm2niix, BIDS Validator
+# Input: sub_list file with participant IDs
+
+core_path="/path/to/project"
+sub_list="${core_path}/sub_list"
+
+for sub in $(cat $sub_list); do
+    echo "Processing participant: $sub"
+
+    # Convert DICOM → NIfTI using BIDScoin
+    bidscoin $core_path/$sub dicom2bids
+
+    # Validate BIDS structure
+    bids-validator ${core_path}/bids/$sub
+
+    if [ $? -eq 0 ]; then
+        echo "✅ BIDS conversion and validation successful for $sub"
+    else
+        echo "❌ BIDS validation failed for $sub"
+    fi
+done
